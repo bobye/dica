@@ -27,3 +27,7 @@ Overall, (a) the theoretical part of the project is [here](http://www.di.ens.fr/
 4. to sample the semi-toy data from our experiments, run ```sample_semi_toy_data.m```
 5. to obtain the real data from our experiments, check ```data/real```
 6. when finished, remove all paths with ```deinstall.m```
+
+
+## Questions?
+Do not hesitate to contact me: firstname.lastname@inria.fr
