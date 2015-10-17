@@ -1,9 +1,9 @@
 ## Rethinking LDA: moment matching for DICA
 
 ## About
-This project contains implementations of some moment matching algorithms for topic modeling. In brief, these algorithms are based on the construction of moment / cumulant tensors from the data and matching them to the respective theoretical expressions in order to learn model's parameters.
+This project contains implementations of some moment matching algorithms for topic modeling. In brief, these algorithms are based on the construction of moment / cumulant tensors from the data and matching them to the respective theoretical expressions in order to learn the parameters of the model.
 
-The code is twofold. One part contains efficient implementation for construction of the moment/ cumulant tensors, while the other part contains implementation of several so called joint diagonalization type algorithms used for matching the tensors. Any tensor type can be arbitrary combined with one of the diagonalization algorithms (leading, in total, to 6 algorithms).
+The code consitst of two parts. One part contains the efficient implementation for construction of the moment/ cumulant tensors, while the other part contains implementations of several so called joint diagonalization type algorithms used for matching the tensors. Any tensor type can be arbitrarily combined with one of the diagonalization algorithms (leading, in total, to 6 algorithms).
 
 The focus is on the **latent Dirichlet allocation** (LDA) and **discrete independent component analysis** (DICA) models. Importantly, the latter model was shown to be similar and sometimes equivalent to the former. Respectively, two types of the tensors are considered: the LDA moments and the DICA cumulants. The theoretical expressions for the LDA moments were previously derived by Anima Anandkumar, Dean P. Foster, Daniel Hsu, Sham M. Kakade, Yi-Kai Liu in A Spectral Algorithm for Latent Dirichlet Allocation. Algorithmica 72(1): 193-214 (2015). The expressions for the DICA cumulants are derived in our paper (see below).
 
