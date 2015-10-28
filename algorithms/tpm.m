@@ -1,4 +1,4 @@
-function [A, lams, W] = tpm(SX, K, momtype, c0)
+function [Dest, A, lams, W] = tpm(SX, K, momtype, c0)
 %TPM Tensor power method for topic modeling
 %
 % [A, lams, W] = tpm(SX, K, momtype, c0)
@@ -10,11 +10,12 @@ function [A, lams, W] = tpm(SX, K, momtype, c0)
 %   c0      : parameter (only for LDA-moments, i.e. momtype = 'lda')
 %
 % Output:
-%   A      : K-by-M diagonalizing matrix
-%   lams   : K-vector with robust eigenvalues
-%   W      : K-by-M whitening matrix
+%   Dest : estimation of the topic matrix
+%   A    : K-by-M diagonalizing matrix
+%   lams : K-vector with robust eigenvalues
+%   W    : K-by-M whitening matrix
 %
-% Comment: See "estimate_D.m" for estimation of the topic matrix.
+% Comment 1: See "estimate_D.m" for details on estimation of D.
 
 % Copyright 2015, Anastasia Podosinnikova
 
@@ -50,6 +51,8 @@ function [A, lams, W] = tpm(SX, K, momtype, c0)
   end
   W = full(W);
   A = thetas'*W;
+  
+  Dest = estimate_D(A);
 end
 
 function [theta, lam] = find_eigenpair(...
@@ -67,8 +70,8 @@ function [theta, lam] = find_eigenpair(...
   % (maxiter). We experimentally found some reasonable values for these
   % parameters. There could be other good values.
   eps = 1e-5;
-  maxiter = 200; % N in the tpm paper
-  nruns = 20; % L in the tpm paper
+  maxiter = 100; % N in the tpm paper
+  nruns = 10; % L in the tpm paper
   
   vects = cell(nruns,1);
   vals  = zeros(nruns,1);

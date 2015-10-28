@@ -1,4 +1,4 @@
-function [A, diags, W, vecs] = jd(SX, K, momtype, opts, c0)
+function [Dest, cmed, cmean, A, as, W, vecs] = jd(SX, K, momtype, opts, c0)
 %JD Joint diagonalization for topic models
 %
 % [A, diags, W, vecs] = jd(SX, K, momtype, opts, c0)
@@ -19,24 +19,28 @@ function [A, diags, W, vecs] = jd(SX, K, momtype, opts, c0)
 %                 given where P is the number of the projection vectors and
 %                 each of them is sampled as W'*u where u is a vector 
 %                 sampled uniformly at random from the unit K-sphere
-%             * 'P' is the number of projection vectors in case 
-%               opts.type = 'random'
-%             * 'isrand' is the initialization type for the joint
-%               diagonalization
+%             * 'P' is the number of projection vectors if type = 'random'
+%             * 'isrand' is the initialization type for the algorithm
 %               - if set to 0, it is initialized with the K-identity matrix
 %                 (default)
 %               - if set to 1, it is initialized with a random K-by-K
 %                 orthogonal matrix
+%             * 'nruns' is the number of repetitions if isrand = 1; has to
+%                 greater or equal to 1; the algorithm with random
+%                 initialization is run 'nruns' times and the output with 
+%                 the best (smallest) objective is reported
 %
 %   c0      : parameter for LDA moments (only if momtype = 'lda')
 %
 % Output:
-%   A     : K-by-M diagonalizing matrix
-%   diags : cell array with almost diagonal matrices A*S*A', A*T(v_p)*A'
-%   W     : K-by-M whitening matrix
-%   vecs  : the vectors, which were used for the projections
+%   Dest : estimate of the parameter D (topic matrix)
+%   c    : estimate of the parameter c
+%   A    : K-by-M diagonalizing matrix
+%   as   : cell array with almost diagonal matrices A*S*A', A*T(v_p)*A'
+%   W    : K-by-M whitening matrix
+%   vecs : the vectors, which were used for the projections
 %   
-% Comment 1: See "estimate_D.m" for estimation of the topic matrix.
+% Comment 1: See "estimate_D.m" for details on estimation of D.
 %
 % Comment 2: Computing M projections of the LDA T-moment or the
 %   DICA T-cumulant is not necessary in practice although it would explain
@@ -81,8 +85,65 @@ function [A, diags, W, vecs] = jd(SX, K, momtype, opts, c0)
   end
   
   % perform joint diagonalization
-  [V, diags] = joint_diagonalization([eye(K) WTWs], opts.isrand); % (!) eye(K) = W*S*W'
+  if opts.isrand == 0
+    [V, as] = joint_diagonalization([eye(K) WTWs], opts.isrand); % (!) eye(K) = W*S*W'
+  end
+  
+  if opts.isrand == 1
+    Vs = cell(opts.nruns,1);
+    Ds = cell(opts.nruns,1);
+    objs = zeros(opts.nruns,1);
+    for irun = 1:opts.nruns
+      [V, as] = joint_diagonalization([eye(K) WTWs], opts.isrand); % (!) eye(K) = W*S*W'
+      obj = compute_jd_objective([eye(K) WTWs], V);
+      Vs{irun} = V; Ds{irun} = as; objs(irun) = obj;
+    end
+    [~,ind] = min(objs);
+    V = Vs{ind};
+    as = Ds{ind};
+  end
+  
   A = V'*W;
+  
+  
+  
+  % Estimation of the parameters (D, c)
+  
+  M = size(A,2);
+  % problem: the pseudo inverse can introduce negative values
+  Dest = pinv(A);
+  % each column of Dest is estimated up to multiplication by scalar
+  % => checking wheter columns have correct signs
+  [Dest, signs] = flip_column_signs(Dest);
+  % truncate all negative values
+  Dest = max(0,Dest);
+  
+  % before normalizing Dest, compute c
+  P = size(vecs,1); 
+  C = zeros(K,P);
+  for k = 1:K
+    for p = 1:P
+      a = as{p};
+      if strcmp(momtype,'dica')
+        C(k,p) = 4*(Dest(:,k)'*signs(k)*vecs{p})^2 / a(k,k)^2;
+      end
+      if strcmp(momtype,'lda')
+        C(k,p) = 4*(Dest(:,k)'*signs(k)*vecs{p})^2 / a(k,k)^2;
+      end
+    end
+    if strcmp(momtype,'lda')
+      C = C * c0*(c0+1)/(c0+2)^2;
+    end
+  end
+  cmean = sum(C,2) / P;
+  cmed = zeros(K,1);
+  for k = 1:k
+    [~,ind] = sort(C(k,:),'ascend');
+    cmed(k) = C(k,ind(ceil(K/2)));
+  end
+  
+  % normalize each column of Dest to be in the simplex
+  Dest = Dest./repmat(sum(Dest),M,1);
   
 end
 
@@ -119,6 +180,15 @@ function opts = verify_correctness_of_the_input_and_set_defaults(momtype,opts)
   if ~( opts.isrand == 1 || opts.isrand == 0 )
     error('Wrong opts.isrand')
   end
-
+  
+  if opts.isrand == 1
+    if ~isfield(opts,'nruns')
+      error('for isrand = 1, specify the number of random restarts nruns')
+    end
+    if opts.nruns < 1
+      error('nruns have to be a positive integer number: 1,2,3,...')
+    end
+  end
+  
 end
 

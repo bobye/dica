@@ -1,4 +1,4 @@
-function [A, lams, W] = spectral(SX, K, momtype, c0)
+function [Dest, cest, A, lams, W, vecs] = spectral(SX, K, momtype, c0)
 %SPECTRAL Spectral algorithm for topic modeling
 %
 % [A, lams, W] = spectral(SX, K, momtype, c0)
@@ -10,11 +10,14 @@ function [A, lams, W] = spectral(SX, K, momtype, c0)
 %   c0      : parameter (only for LDA-moments, i.e. momtype = 'lda')
 %
 % Output:
-%   A      : K-by-M diagonalizing matrix
-%   lams   : K-vector with the eigenvalues
-%   W      : K-by-M whitening matrix
+%   Dest : estimate of the parameter D (topic matrix)
+%   cest : estimate of the parameter c
+%   A    : K-by-M diagonalizing matrix
+%   lams : K-vector with the eigenvalues
+%   W    : K-by-M whitening matrix
+%   vecs : cell with the projection vector
 %
-% Comment: See "estimate_D.m" for estimation of the topic matrix.
+% Comment 1: See "estimate_D.m" for details on estimation of D.
 
 % Copyright 2015, Anastasia Podosinnikova
 
@@ -45,5 +48,38 @@ function [A, lams, W] = spectral(SX, K, momtype, c0)
   thetas = evecs;
   lams = diag(evals);
   A = thetas'*W;
+  
+  
+  
+  % Estimation of the parameters (D, c)
+  
+  M = size(A,2);
+  % problem: the pseudo inverse can introduce negative values
+  Dest = pinv(A);
+  % each column of Dest is estimated up to multiplication by scalar
+  % => checking wheter columns have correct signs
+  [Dest, signs] = flip_column_signs(Dest);
+  % truncate all negative values
+  Dest = max(0,Dest);
+  
+  % before normalizing Dest, compute c
+  c = zeros(K,1);
+  v = vecs{1};
+  for k = 1:K
+    if strcmp(momtype,'dica')
+      c(k) = 4*(Dest(:,k)'*v*signs(k))^2 / lams(k)^2;
+    end
+    if strcmp(momtype,'lda')
+      c(k) = 4*(Dest(:,k)'*v*signs(k))^2 / lams(k)^2;
+    end
+  end
+  if strcmp(momtype,'lda')
+    c = c * (c0*(c0+1)/(c0+2)^2);
+  end
+  cest = c;
+  
+  
+  % normalize each column of Dest to be in the simplex
+  Dest = Dest./repmat(sum(Dest),M,1);
   
 end
