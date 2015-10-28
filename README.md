@@ -1,6 +1,6 @@
 ### Rethinking LDA: moment matching for Discrete ICA
 
-If you are only interested in the implementations of the algorithms, but not the reproducing the experiments from out paper (see below), 
+If you are only interested in the implementations of the algorithms, but not reproducing the experiments from out paper (see below), 
 check [this](https://github.com/anastasia-podosinnikova/dica-light) repo.
 
 #### About
