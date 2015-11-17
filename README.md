@@ -47,4 +47,4 @@ and (b) the project contains Matlab/C++ implementation of the algorithms and the
 
 
 #### Questions?
-Do not hesitate to contact me: firstname.lastname@inria.fr
+Do not hesitate to contact me: firstname.lastname@inria.fr (Anastasia Podosinnikova)
